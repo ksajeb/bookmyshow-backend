@@ -21,6 +21,9 @@ public class Payment {
     @Column(unique = false,nullable = false)
     private String transactionId;
 
+    @Column(unique = false)
+    private Double amount;
+
     @Column(nullable = false)
     private LocalDateTime paymentTime;
 

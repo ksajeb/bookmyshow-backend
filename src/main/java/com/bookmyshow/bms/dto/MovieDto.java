@@ -14,7 +14,7 @@ public class MovieDto {
     private String description;
     private String language;
     private String genre;
-    private String durationMins;
+    private Integer durationMins;
     private String releaseDate;
     private String posterUrl;
 }

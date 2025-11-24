@@ -12,7 +12,7 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     List<Booking> findByUserId(Long userId);
 
-    Optional<Booking> findByBookingNumber(Long bookingNumber);
+    Optional<Booking> findByBookingNumber(String bookingNumber);
 
     List<Booking> findByShowId(Long id);
 }

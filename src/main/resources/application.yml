@@ -18,3 +18,6 @@ spring:
 server:
   servlet:
     context-path: /api/v1
+
+jwt:
+  secretKey: secretkey38r90dfhjhsdghdkhdhg9t935804dknfrut9w49i4wti

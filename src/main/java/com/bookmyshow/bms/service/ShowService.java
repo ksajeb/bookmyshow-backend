@@ -75,7 +75,7 @@ public class ShowService {
                     List<ShowSeat> availableSeats = showSeatRepository.findByShowIdAndStatus(show.getId(), "AVAILABLE");
                     return mapToDto(show,availableSeats);
                 })
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public List<ShowDto> getShowsByMovie(Long movieId)
@@ -86,7 +86,7 @@ public class ShowService {
                     List<ShowSeat> availableSeats = showSeatRepository.findByShowIdAndStatus(show.getId(), "AVAILABLE");
                     return mapToDto(show,availableSeats);
                 })
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public List<ShowDto> getShowsByMovieAndCity(Long movieId,String city)
@@ -97,7 +97,7 @@ public class ShowService {
                     List<ShowSeat> availableSeats = showSeatRepository.findByShowIdAndStatus(show.getId(), "AVAILABLE");
                     return mapToDto(show,availableSeats);
                 })
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public List<ShowDto> getShowsByDateRange(LocalDateTime startDate, LocalDateTime endDate)
@@ -108,7 +108,7 @@ public class ShowService {
                     List<ShowSeat> availableSeats = showSeatRepository.findByShowIdAndStatus(show.getId(), "AVAILABLE");
                     return mapToDto(show,availableSeats);
                 })
-                .collect(Collectors.toList());
+                .toList();
     }
 
     private ShowDto mapToDto(Show show,List<ShowSeat> availableSeats)

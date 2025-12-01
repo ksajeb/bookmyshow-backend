@@ -43,7 +43,7 @@ public class BookingService {
         List<ShowSeat> selectedSeats=showSeatRepository.findAllById(bookingRequest.getSeatIds());
 
         for(ShowSeat seat:selectedSeats){
-            if (!"AVAILABLE ".equals(seat.getStatus())){
+            if (!"AVAILABLE".equals(seat.getStatus())){
                 throw new SeatUnavailableException("Seat "+seat.getSeat().getSeatNumber()+" is not available");
             }
             seat.setStatus("LOCKED");

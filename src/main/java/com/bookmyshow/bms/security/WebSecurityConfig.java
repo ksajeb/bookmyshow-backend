@@ -25,6 +25,7 @@ public class WebSecurityConfig {
                 .authorizeHttpRequests(auth->auth
 //                .requestMatchers("/api/v1/public/**").permitAll()
                 .requestMatchers("/auth/**").permitAll()
+                                .requestMatchers("/users/**").permitAll()
                 .anyRequest().authenticated()
 
         ).addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

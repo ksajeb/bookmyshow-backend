@@ -6,17 +6,19 @@ import com.bookmyshow.bms.exception.ResourceNotFoundException;
 import com.bookmyshow.bms.repository.MovieRepository;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
-@RequiredArgsConstructor
 public class MovieService {
 
-    private final MovieRepository movieRepository;
+    @Autowired
+    private MovieRepository movieRepository;
 
-    private final ModelMapper modelMapper;
+    @Autowired
+    private ModelMapper modelMapper;
 
     public MovieDto createMovie(MovieDto movieDto){
         Movie movie= modelMapper.map(movieDto,Movie.class);
@@ -51,7 +53,7 @@ public class MovieService {
                 .toList();
     }
 
-    public List<MovieDto> searchMovieByTile(String title){
+    public List<MovieDto> searchMovieByTitle(String title){
         List<Movie> movies=movieRepository.findByTitleContaining(title);
         return movies.stream()
                 .map(movie -> modelMapper.map(movies,MovieDto.class))

@@ -17,5 +17,4 @@ public class ShowDto {
     private MovieDto movie;
     private ScreenDto screen;
     private List<ShowSeatDto > availableSeat;
-
 }

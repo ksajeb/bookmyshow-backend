@@ -8,5 +8,5 @@ import java.util.List;
 
 @Repository
 public interface TheatreRepository extends JpaRepository<Theater, Long> {
-    List<Theater> findByCity(String city);
+    List<Theater> findByCityIgnoreCase(String city);
 }

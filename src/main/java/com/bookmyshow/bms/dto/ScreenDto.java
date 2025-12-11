@@ -12,5 +12,4 @@ public class ScreenDto {
     private String name;
     private Integer totalSeats;
     private TheaterDto theater;
-
 }

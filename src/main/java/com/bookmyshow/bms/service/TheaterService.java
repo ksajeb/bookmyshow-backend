@@ -40,7 +40,7 @@ public class TheaterService {
     }
 
     public List<TheaterDto> getAllTheaterByCity(String city) {
-        return theatreRepository.findByCity(city)
+        return theatreRepository.findByCityIgnoreCase(city)
                 .stream()
                 .map(theater -> modelMapper.map(theater, TheaterDto.class))
                 .toList();
@@ -57,7 +57,10 @@ public class TheaterService {
         Theater existingTheater = theatreRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Theater not found with id: " + id));
 
-        modelMapper.map(theaterDto, existingTheater);
+        existingTheater.setName(theaterDto.getName());
+        existingTheater.setAddress(theaterDto.getAddress());
+        existingTheater.setCity(theaterDto.getCity());
+        existingTheater.setTotalScreen(theaterDto.getTotalScreen());
 
         Theater updatedTheater = theatreRepository.save(existingTheater);
         return modelMapper.map(updatedTheater, TheaterDto.class);

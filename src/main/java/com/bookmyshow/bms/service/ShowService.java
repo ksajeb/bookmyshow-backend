@@ -46,9 +46,19 @@ public class ShowService {
 
         Show savedShow=showRepository.save(show);
 
-        List<ShowSeat> availableSeats=showSeatRepository.findByShowIdAndStatus(savedShow.getId(),"AVAILABLE");
+        List<ShowSeat> showSeats = screen.getSeats().stream().map(seat -> {
+            ShowSeat showSeat = new ShowSeat();
+            showSeat.setShow(savedShow);
+            showSeat.setSeat(seat);
+            showSeat.setStatus("AVAILABLE");
+            showSeat.setPrice(seat.getBasePrice());
+            return showSeat;
+        }).toList();
 
-        List<ShowSeatDto> seatDtos = availableSeats.stream()
+        List<ShowSeat> availableSeats=showSeatRepository.saveAll(showSeats);
+
+        List<ShowSeatDto> seatDtos = showSeats
+                .stream()
                 .map(seat -> modelMapper.map(seat, ShowSeatDto.class))
                 .toList();
 

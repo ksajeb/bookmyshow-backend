@@ -68,8 +68,8 @@ public class ScreenService {
         log.info("Fetching screen by ID {}", id);
         Screen screen = screenRepository.findById(id)
                 .orElseThrow(() -> {
-                    log.error("Screen not found with ID {}", id);
-                   return new ResourceNotFoundException("Screen not found");
+                    log.error("Screen not found with ID: {}", id);
+                   return new ResourceNotFoundException("Screen not found with the ID:"+id);
                 });
         log.info("Screen found with ID {}", id);
         return modelMapper.map(screen, ScreenDto.class);
@@ -78,6 +78,10 @@ public class ScreenService {
     public List<ScreenDto> getScreensByTheaterId(Long theaterId) {
         log.info("Fetching screens for theater ID {}", theaterId);
         List<Screen> screens = screenRepository.findByTheaterId(theaterId);
+        if(screens.isEmpty()){
+            log.warn("No screen found with this theater ID: {}", theaterId);
+            throw new ResourceNotFoundException("No screen found with this theater ID: " + theaterId);
+        }
         log.info("Found {} screens for theater ID {}", screens.size(), theaterId);
         return screens.stream()
                 .map(screen -> modelMapper.map(screen, ScreenDto.class))

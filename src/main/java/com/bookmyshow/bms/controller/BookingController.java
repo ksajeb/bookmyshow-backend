@@ -2,6 +2,7 @@ package com.bookmyshow.bms.controller;
 
 import com.bookmyshow.bms.dto.BookingDto;
 import com.bookmyshow.bms.dto.BookingRequestDto;
+import com.bookmyshow.bms.entity.Theater;
 import com.bookmyshow.bms.service.BookingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,12 @@ public class BookingController {
     @PostMapping()
     public ResponseEntity<BookingDto> createBooking(@Valid @RequestBody BookingRequestDto bookingRequest){
         return new ResponseEntity<>(bookingService.createBooking(bookingRequest), HttpStatus.CREATED);
+    }
+
+    @GetMapping()
+    public ResponseEntity <List<BookingDto>> getAllBookings(){
+        List<BookingDto> bookings=bookingService.getAllBookings();
+        return ResponseEntity.ok(bookings);
     }
 
     @GetMapping("/{id}")

@@ -11,6 +11,7 @@ import com.bookmyshow.bms.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.stereotype.Service;
 
@@ -19,6 +20,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class BookingService {
@@ -167,5 +169,15 @@ public class BookingService {
             showDto.setAvailableSeat(availableSeats);
         }
         return bookingDto;
+    }
+
+    public List<BookingDto> getAllBookings() {
+        log.info("Fetching all bookings...");
+        List<Booking> bookings=bookingRepository.findAll();
+        log.info("Total theaters found: {}", bookings.size());
+        return bookings
+                .stream()
+                .map(booking->modelMapper.map(booking,BookingDto.class))
+                .toList();
     }
 }

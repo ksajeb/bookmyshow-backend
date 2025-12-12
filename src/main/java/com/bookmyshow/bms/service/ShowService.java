@@ -76,7 +76,7 @@ public class ShowService {
         List<ShowSeat> availableSeats=showSeatRepository.saveAll(showSeats);
         log.info("Show seats created: {}", showSeats.size());
 
-        List<ShowSeatDto> seatDtos = showSeats
+        List<ShowSeatDto> seatDtos = availableSeats
                 .stream()
                 .map(seat -> modelMapper.map(seat, ShowSeatDto.class))
                 .toList();

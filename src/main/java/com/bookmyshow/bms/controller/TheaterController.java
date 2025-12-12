@@ -31,7 +31,7 @@ public class TheaterController {
     // GET ALL THEATERS
     @GetMapping
     public ResponseEntity<List<TheaterDto>> getAllTheaters() {
-        List<TheaterDto> theaters = theaterService.getALlTheater();
+        List<TheaterDto> theaters = theaterService.getAllTheater();
         return ResponseEntity.ok(theaters);
     }
 

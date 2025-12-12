@@ -46,8 +46,8 @@ public class MovieController {
     }
 
     // SEARCH MOVIE BY TITLE
-    @GetMapping("/search")
-    public ResponseEntity<List<MovieDto>> searchMovie(@RequestParam String title){
+    @GetMapping("/search/{title}")
+    public ResponseEntity<List<MovieDto>> searchMovie(@PathVariable String title){
         return ResponseEntity.ok(movieService.searchMovieByTitle(title));
     }
 

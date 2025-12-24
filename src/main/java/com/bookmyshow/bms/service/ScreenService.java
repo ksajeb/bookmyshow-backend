@@ -2,6 +2,7 @@ package com.bookmyshow.bms.service;
 
 import com.bookmyshow.bms.dto.ScreenDto;
 import com.bookmyshow.bms.entity.Screen;
+import com.bookmyshow.bms.entity.Seat;
 import com.bookmyshow.bms.entity.Theater;
 import com.bookmyshow.bms.exception.ResourceNotFoundException;
 import com.bookmyshow.bms.repository.ScreenRepository;
@@ -12,6 +13,7 @@ import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -45,6 +47,20 @@ public class ScreenService {
 
         Screen screen = modelMapper.map(screenDto, Screen.class);
         screen.setTheater(theater);
+
+        List<Seat> seats = new ArrayList<>();
+
+        for (int i = 1; i <= screenDto.getTotalSeats(); i++) {
+            Seat seat = new Seat();
+            seat.setSeatNumber("A" + i);
+            seat.setSeatType("REGULAR");
+            seat.setBasePrice(200.0);
+            seat.setScreen(screen);
+
+            seats.add(seat);
+        }
+
+        screen.setSeats(seats);
 
         log.info("Saving new Screen into database");
         Screen saved = screenRepository.save(screen);

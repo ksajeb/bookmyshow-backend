@@ -53,9 +53,12 @@ public class ShowService {
                 });
 
         log.debug("Mapping showDto to Show entity");
-        Show show=modelMapper.map(showDto,Show.class);
+        Show show = new Show();
+        show.setStartTime(showDto.getStartTime());
+        show.setEndTime(showDto.getEndTime());
         show.setMovie(movie);
         show.setScreen(screen);
+
 
         Show savedShow=showRepository.save(show);
 

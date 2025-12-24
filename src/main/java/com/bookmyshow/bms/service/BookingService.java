@@ -26,45 +26,59 @@ import java.util.stream.Collectors;
 public class BookingService {
 
     private final UserRepository userRepository;
-
     private final ShowRepository showRepository;
-
     private final ShowSeatRepository showSeatRepository;
-
     private final BookingRepository bookingRepository;
-
     private final ModelMapper modelMapper;
 
     @Transactional
     public BookingDto createBooking(@Valid BookingRequestDto bookingRequest) {
-        User user=userRepository.findById(bookingRequest.getUserId())
-                .orElseThrow(()->new ResourceNotFoundException("User Not Found"));
+        log.info("Creating booking for userId={} and showId={} with seats={}",
+                bookingRequest.getUserId(), bookingRequest.getShowId(), bookingRequest.getSeatIds());
 
-        Show show=showRepository.findById(bookingRequest.getShowId())
-                .orElseThrow(()->new ResourceNotFoundException("Show Not Found"));
+        User user = userRepository.findById(bookingRequest.getUserId())
+                .orElseThrow(() -> {
+                    log.error("User not found with id={}", bookingRequest.getUserId());
+                    return new ResourceNotFoundException("User Not Found");
+                });
 
-        List<ShowSeat> selectedSeats=showSeatRepository.findAllById(bookingRequest.getSeatIds());
+        Show show = showRepository.findById(bookingRequest.getShowId())
+                .orElseThrow(() -> {
+                    log.error("Show not found with id={}", bookingRequest.getShowId());
+                    return new ResourceNotFoundException("Show Not Found");
+                });
 
-        for(ShowSeat seat:selectedSeats){
-            if (!"AVAILABLE".equals(seat.getStatus())){
-                throw new SeatUnavailableException("Seat "+seat.getSeat().getSeatNumber()+" is not available");
+        List<ShowSeat> selectedSeats = showSeatRepository.findAllById(bookingRequest.getSeatIds());
+        if (selectedSeats.size() != bookingRequest.getSeatIds().size()) {
+            log.error("One or more selected seats are invalid. Requested={} Found={}",
+                    bookingRequest.getSeatIds().size(), selectedSeats.size());
+            throw new ResourceNotFoundException("One or more selected seats are invalid.");
+        }
+
+        for (ShowSeat seat : selectedSeats) {
+            if (!"AVAILABLE".equals(seat.getStatus())) {
+                log.warn("Seat {} is not available", seat.getSeat().getSeatNumber());
+                throw new SeatUnavailableException("Seat " + seat.getSeat().getSeatNumber() + " is not available");
             }
             seat.setStatus("LOCKED");
         }
         showSeatRepository.saveAll(selectedSeats);
+        log.info("Seats locked: {}", bookingRequest.getSeatIds());
 
-        Double totalAmount=selectedSeats.stream()
+        Double totalAmount = selectedSeats.stream()
                 .mapToDouble(ShowSeat::getPrice)
                 .sum();
+        log.info("Total amount calculated: {}", totalAmount);
 
-        Payment payment=new Payment();
+        Payment payment = new Payment();
         payment.setAmount(totalAmount);
         payment.setPaymentTime(LocalDateTime.now());
         payment.setPaymentMethod(bookingRequest.getPaymentMethod());
         payment.setStatus("SUCCESS");
         payment.setTransactionId(UUID.randomUUID().toString());
+        log.info("Payment created with transactionId={}", payment.getTransactionId());
 
-        Booking booking=new Booking();
+        Booking booking = new Booking();
         booking.setUser(user);
         booking.setShow(show);
         booking.setBookingTime(LocalDateTime.now());
@@ -73,92 +87,116 @@ public class BookingService {
         booking.setBookingNumber(UUID.randomUUID().toString());
         booking.setPayment(payment);
 
-        Booking savedBooking=bookingRepository.save(booking);
+        Booking savedBooking = bookingRepository.save(booking);
+        log.info("Booking saved with bookingNumber={}", savedBooking.getBookingNumber());
 
-        selectedSeats.forEach(seat->
-        {
+        selectedSeats.forEach(seat -> {
             seat.setBooking(savedBooking);
             seat.setStatus("BOOKED");
         });
         showSeatRepository.saveAll(selectedSeats);
-        return mapToBookingDto(savedBooking,selectedSeats);
+        log.info("Seats booked successfully: {}", bookingRequest.getSeatIds());
 
+        return mapToBookingDto(savedBooking, selectedSeats);
     }
 
-    public BookingDto getBookingById(Long id ){
-        Booking booking=bookingRepository.findById(id)
-                .orElseThrow(()->new ResourceNotFoundException("Booking Not Found with the id: "+id));
-
-        List<ShowSeat>seats=showSeatRepository.findAll().stream()
-                .filter(seat -> (
-                    seat.getBooking()!=null && seat.getBooking().getId().equals(booking.getId())
-                )).collect(Collectors.toList());
-                return mapToBookingDto(booking,seats);
+    public List<BookingDto> getAllBookings() {
+        log.info("Fetching all bookings...");
+        List<Booking> bookings = bookingRepository.findAll();
+        log.info("Total bookings found: {}", bookings.size());
+        return bookings.stream()
+                .map(booking -> modelMapper.map(booking, BookingDto.class))
+                .toList();
     }
 
-    public BookingDto getBookingByNumber(String bookingNumber){
-        Booking booking=bookingRepository.findByBookingNumber(bookingNumber)
-                .orElseThrow(()->new ResourceNotFoundException("Booking Not Found with the id: "+bookingNumber));
+    public BookingDto getBookingById(Long id) {
+        log.info("Fetching booking by id={}", id);
+        Booking booking = bookingRepository.findById(id)
+                .orElseThrow(() -> {
+                    log.error("Booking not found with id={}", id);
+                    return new ResourceNotFoundException("Booking Not Found with the id: " + id);
+                });
 
-        List<ShowSeat>seats=showSeatRepository.findAll().stream()
-                .filter(seat -> (
-                        seat.getBooking()!=null && seat.getBooking().getId().equals(booking.getId())
-                )).collect(Collectors.toList());
-        return mapToBookingDto(booking,seats);
+        List<ShowSeat> seats = showSeatRepository.findAll().stream()
+                .filter(seat -> seat.getBooking() != null && seat.getBooking().getId().equals(booking.getId()))
+                .collect(Collectors.toList());
+        log.info("Seats found for bookingId={}: {}", id, seats.size());
+
+        return mapToBookingDto(booking, seats);
     }
 
-    public List<BookingDto> getBookingByUserId(Long userId){
-       List<Booking> bookings=bookingRepository.findByUserId(userId);
-       return bookings.stream()
-               .map(booking->{
-                   List<ShowSeat> seats=showSeatRepository.findAll()
-                           .stream()
-                           .filter(seat -> (
-                                   seat.getBooking()!=null && seat.getBooking().getId().equals(booking.getId())
-                           )).collect(Collectors.toList());
-        return mapToBookingDto(booking,seats);
-               }).collect(Collectors.toList());
+    public BookingDto getBookingByNumber(String bookingNumber) {
+        log.info("Fetching booking by bookingNumber={}", bookingNumber);
+        Booking booking = bookingRepository.findByBookingNumber(bookingNumber)
+                .orElseThrow(() -> {
+                    log.error("Booking not found with bookingNumber={}", bookingNumber);
+                    return new ResourceNotFoundException("Booking Not Found with the id: " + bookingNumber);
+                });
+
+        List<ShowSeat> seats = showSeatRepository.findAll().stream()
+                .filter(seat -> seat.getBooking() != null && seat.getBooking().getId().equals(booking.getId()))
+                .collect(Collectors.toList());
+        log.info("Seats found for bookingNumber={}: {}", bookingNumber, seats.size());
+
+        return mapToBookingDto(booking, seats);
+    }
+
+    public List<BookingDto> getBookingByUserId(Long userId) {
+        log.info("Fetching bookings by userId={}", userId);
+        List<Booking> bookings = bookingRepository.findByUserId(userId);
+        log.info("Total bookings found for userId={}: {}", userId, bookings.size());
+
+        return bookings.stream()
+                .map(booking -> {
+                    List<ShowSeat> seats = showSeatRepository.findAll().stream()
+                            .filter(seat -> seat.getBooking() != null && seat.getBooking().getId().equals(booking.getId()))
+                            .collect(Collectors.toList());
+                    log.debug("Seats found for bookingId={}: {}", booking.getId(), seats.size());
+                    return mapToBookingDto(booking, seats);
+                })
+                .collect(Collectors.toList());
     }
 
     @Transactional
-    public BookingDto cancelBooking(Long id){
-        Booking booking=bookingRepository.findById(id)
-                .orElseThrow(()->new ResourceNotFoundException("Booking not found with the id: "+id));
+    public BookingDto cancelBooking(Long id) {
+        log.info("Cancelling booking with id={}", id);
+        Booking booking = bookingRepository.findById(id)
+                .orElseThrow(() -> {
+                    log.error("Booking not found with id={}", id);
+                    return new ResourceNotFoundException("Booking not found with the id: " + id);
+                });
 
         booking.setStatus("CANCELLED");
-        List<ShowSeat> seats=showSeatRepository.findAll()
-                .stream()
-                .filter(seat -> (
-                        seat.getBooking()!=null && seat.getBooking().getId().equals(booking.getId())
-                )).toList();
+        List<ShowSeat> seats = showSeatRepository.findAll().stream()
+                .filter(seat -> seat.getBooking() != null && seat.getBooking().getId().equals(booking.getId()))
+                .toList();
 
-        seats.forEach(seat->{
+        seats.forEach(seat -> {
             seat.setStatus("AVAILABLE");
             seat.setBooking(null);
-
         });
-        if(booking.getPayment()!=null){
+        if (booking.getPayment() != null) {
             booking.getPayment().setStatus("REFUNDED");
+            log.info("Payment refunded for bookingId={}", booking.getId());
         }
 
-        Booking updateBooking=bookingRepository.save(booking);
+        Booking updatedBooking = bookingRepository.save(booking);
         showSeatRepository.saveAll(seats);
+        log.info("Booking cancelled successfully for id={}", id);
 
-        return mapToBookingDto(updateBooking,seats);
-
+        return mapToBookingDto(updatedBooking, seats);
     }
 
-    public BookingDto mapToBookingDto(Booking booking,List<ShowSeat> seats){
+    public BookingDto mapToBookingDto(Booking booking, List<ShowSeat> seats) {
+        log.debug("Mapping Booking to BookingDto for bookingId={}", booking.getId());
+        BookingDto bookingDto = modelMapper.map(booking, BookingDto.class);
 
-        BookingDto bookingDto=modelMapper.map(booking,BookingDto.class);
-
-        List<ShowSeatDto> seatDto=seats.stream()
-                .map(seat->modelMapper.map(seat,ShowSeatDto.class))
+        List<ShowSeatDto> seatDto = seats.stream()
+                .map(seat -> modelMapper.map(seat, ShowSeatDto.class))
                 .toList();
         bookingDto.setSeat(seatDto);
 
         ShowDto showDto = bookingDto.getShow();
-
         if (showDto != null) {
             List<ShowSeatDto> availableSeats = showSeatRepository.findByShowId(showDto.getId())
                     .stream()
@@ -167,17 +205,9 @@ public class BookingService {
                     .collect(Collectors.toList());
 
             showDto.setAvailableSeat(availableSeats);
+            log.debug("Available seats mapped for showId={}: {}", showDto.getId(), availableSeats.size());
         }
-        return bookingDto;
-    }
 
-    public List<BookingDto> getAllBookings() {
-        log.info("Fetching all bookings...");
-        List<Booking> bookings=bookingRepository.findAll();
-        log.info("Total theaters found: {}", bookings.size());
-        return bookings
-                .stream()
-                .map(booking->modelMapper.map(booking,BookingDto.class))
-                .toList();
+        return bookingDto;
     }
 }
